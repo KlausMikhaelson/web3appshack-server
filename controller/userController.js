@@ -75,3 +75,18 @@ exports.getVerifiedCredentialsofUser = async(req, res) => {
         return res.status(500).json({message: err.message});
     }
 }
+
+exports.recommendUsersWithSimilarInterests = async(req, res) => {
+    try {
+        const userByEmail = await User.findOne({ email: req.params.email });
+        if (!userByEmail) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        const users = await User.find({ interests: { $in: userByEmail.interests } });
+        return res.status(200).json(users);
+    } catch (error) {
+        return res.status(500).json({ message: error.message });
+    }
+}
+
+exports.getUsers
