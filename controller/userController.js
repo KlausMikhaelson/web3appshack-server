@@ -11,6 +11,7 @@ exports.createUser = async (req, res) => {
     }
     const user = new User({
       email: email,
+      address: req.body.address,
       name: req.body.name,
       universityYear: req.body.universityYear,
       major: req.body.major,
@@ -23,7 +24,7 @@ exports.createUser = async (req, res) => {
       })
       .catch((error) => {
         if (error.code === 11000) {
-          return res.status(400).json({ message: "User already exists" });
+          return res.status(403).json({ message: "User already exists" });
         } else {
           return res.status(500).json({ message: error.message });
         }
@@ -35,7 +36,8 @@ exports.createUser = async (req, res) => {
 
 exports.getUser = async(req, res) => {
     try {
-        const userByEmail = await User.findOne({ email: req.params.email });
+      console.log(req.headers.email);
+        const userByEmail = await User.findOne({ email: req.headers.email });
         if (!userByEmail) {
             return res.status(404).json({ message: "User not found" });
         }
@@ -76,17 +78,21 @@ exports.getVerifiedCredentialsofUser = async(req, res) => {
     }
 }
 
-exports.recommendUsersWithSimilarInterests = async(req, res) => {
+exports.getUserRecommnedationwithSimilarInterests = async(req, res) => {
     try {
-        const userByEmail = await User.findOne({ email: req.params.email });
-        if (!userByEmail) {
-            return res.status(404).json({ message: "User not found" });
+        const userByEmail = await User.findOne({ email: req.headers.email })
+        if(!userByEmail){
+            return res.status(404).json({message: "User not found"});
         }
         const users = await User.find({ interests: { $in: userByEmail.interests } });
-        return res.status(200).json(users);
-    } catch (error) {
-        return res.status(500).json({ message: error.message });
+        const sortedUsers = users.sort((a, b) => {
+          const aInterests = a.interests.length;
+          const bInterests = b.interests.length;
+          return bInterests - aInterests;
+        });
+        const filteredUsers = sortedUsers.filter((user) => user.email !== req.headers.email);
+        return res.status(200).json(filteredUsers);
+    } catch(err) {
+        return res.status(500).json({message: err.message});
     }
 }
-
-exports.getUsers
